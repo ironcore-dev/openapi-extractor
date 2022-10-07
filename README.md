@@ -13,29 +13,41 @@ The `openapi-extractor` extracts the OpenAPI v2 and v3 specifications of a given
 To install the `openapi-extractor` binary into your Go bin path run
 
 ```bash
-go install github.com/onmetal/openapi-extractor/cmd/openapi-extractor@latest
+go install github.com/onmetal/openapi-extractor/cmd/openapi-extractor@main
 ```
 
 ## Usage
 
-To extract the OpenAPI specifications run
+### Command based extraction
 
-```bash
-openapi-extractor --apiserver=<PATH-TO-APISERVER-BIN> \
+In case you have the api server binary present, you can extract the OpenAPI specifications by running
+
+```shell
+openapi-extractor --apiserver-command=<PATH-TO-APISERVER-BIN> \
   --apiservices=<PATH-TO-APISERVICES-DIR>
 ```
 
-The extracted OpenAPI v2 and v3 files can be found in current folder where the v2 version will be stored in the `swagger.json`
-file and the v3 versions will be stored in individual files per group in the `./v3` folder. 
+### Go module based extraction
 
-To override the location of the output pass on the `--output` flag e.g. via `--output=dev` store extract the files into 
-the `./dev` folder.
+The [`sample`](/sample) folder contains an example on how to extract the Open API spec from an api server package. In 
+our example we are using the [`onmetal-api`](https://github.com/onmetal/onmetal-api) aggregated api server.
 
-```bash
-openapi-extractor --apiserver=<PATH-TO-APISERVER-BIN> \
-  --apiservices=<PATH-TO-APISERVICES-DIR> \
-  --output=dev
+```shell
+openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/apiserver \
+  --apiserver-build-opts=mod \
+  --apiservices=<PATH-TO-APISERVICES-DIR>
 ```
+
+In case you want to use your own package, first `go get` it so you have to correct dependencies in your `go.mod` file and
+adjust the `--apiserver-package` flag accordingly.
+
+### Output
+
+The extracted OpenAPI v2 and v3 files can be found in current folder where the v2 version will be stored in the `swagger.json`
+file and the v3 versions will be stored in individual files per group in the `./v3` folder.
+
+To override the location of the output pass on the `--output` flag e.g. via `--output=dev` store extract the files into
+the `./dev` folder.
 
 ## Contributing
 
