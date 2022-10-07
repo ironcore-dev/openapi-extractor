@@ -20,16 +20,19 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/onmetal/controller-utils/buildutils"
 	"github.com/onmetal/openapi-extractor/envtestutils"
 	"github.com/onmetal/openapi-extractor/envtestutils/apiserver"
 	flag "github.com/spf13/pflag"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -46,18 +49,23 @@ var (
 	testEnv    *envtest.Environment
 	testEnvExt *envtestutils.EnvironmentExtensions
 	log        = ctrl.Log.WithName("openapi-extractor")
+	ctx        = context.Background()
 )
 
 func main() {
-	var apiServerPath string
-	var outputDir string
+	var apiServerCommand []string
+	var outputDir = "."
 	var apiServicePaths []string
-	var delay time.Duration
+	var timeout = 5 * time.Second
+	var apiServerPackage string
+	var apiServerBuildOpts []string
 
-	flag.StringVar(&apiServerPath, "apiserver", "", "Path to the aggregated apiserver binary")
-	flag.StringSliceVar(&apiServicePaths, "apiservices", []string{}, "Comma separated list of apiservice definitions")
-	flag.StringVar(&outputDir, "output", "", "Directory to store the extracted OpenAPI specs (default: current directory)")
-	flag.DurationVar(&delay, "delay", 2*time.Second, "Delay to wait for apiservices to become available")
+	flag.StringVar(&apiServerPackage, "apiserver-package", apiServerPackage, "Package to build the api server")
+	flag.StringSliceVar(&apiServerBuildOpts, "apiserver-build-opts", apiServerBuildOpts, "Flags for building the api server")
+	flag.StringSliceVar(&apiServerCommand, "apiserver-command", apiServerCommand, "Command to run the api server")
+	flag.StringSliceVar(&apiServicePaths, "apiservices", apiServicePaths, "Comma separated list of api service definitions")
+	flag.StringVar(&outputDir, "output", outputDir, "Directory to store the extracted OpenAPI specs (default: current directory)")
+	flag.DurationVar(&timeout, "timeout", timeout, "Timeout to wait for api services to become available")
 
 	opts := zap.Options{
 		Development: true,
@@ -78,7 +86,12 @@ func main() {
 		log.Error(err, "failed to start testenv")
 		os.Exit(1)
 	}
-	defer envtestutils.StopWithExtensions(testEnv, testEnvExt)
+	defer func() {
+		if err := envtestutils.StopWithExtensions(testEnv, testEnvExt); err != nil {
+			log.Error(err, "failed to stop testenv")
+			os.Exit(1)
+		}
+	}()
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	if err != nil {
@@ -86,12 +99,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	var buildOpts []buildutils.BuildOption
+	for _, buildOpt := range apiServerBuildOpts {
+		buildOpts = append(buildOpts, buildutils.ModMode(buildOpt)) // TODO: This is not correct. Fix this.
+	}
+
 	apiSrv, err := apiserver.New(cfg, apiserver.Options{
-		Command:     []string{apiServerPath},
-		ETCDServers: []string{testEnv.ControlPlane.Etcd.URL.String()},
-		Host:        testEnvExt.APIServiceInstallOptions.LocalServingHost,
-		Port:        testEnvExt.APIServiceInstallOptions.LocalServingPort,
-		CertDir:     testEnvExt.APIServiceInstallOptions.LocalServingCertDir,
+		Command:      apiServerCommand,
+		MainPath:     apiServerPackage,
+		BuildOptions: buildOpts,
+		ETCDServers:  []string{testEnv.ControlPlane.Etcd.URL.String()},
+		Host:         testEnvExt.APIServiceInstallOptions.LocalServingHost,
+		Port:         testEnvExt.APIServiceInstallOptions.LocalServingPort,
+		CertDir:      testEnvExt.APIServiceInstallOptions.LocalServingCertDir,
 	})
 	if err != nil {
 		log.Error(err, "failed to setup api server")
@@ -102,7 +122,12 @@ func main() {
 		log.Error(err, "failed to start api server")
 		os.Exit(1)
 	}
-	defer apiSrv.Stop()
+	defer func() {
+		if err := apiSrv.Stop(); err != nil {
+			log.Error(err, "failed to stop api server")
+			os.Exit(1)
+		}
+	}()
 
 	if err := envtestutils.WaitUntilAPIServicesReadyWithTimeout(apiServiceTimeout, testEnvExt, k8sClient, scheme.Scheme); err != nil {
 		log.Error(err, "failed to wait for api server to become ready")
@@ -115,21 +140,56 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Dirty hack: Delaying the openapi extraction by waiting for the apiservices to become available.
-	time.Sleep(delay)
+	if err := waitForApiServices(ctx, log, clientSet, timeout, testEnvExt.APIServiceInstallOptions.APIServices); err != nil {
+		log.Error(err, "failed to wait for the api services to become available")
+		os.Exit(1)
+	}
 
-	if err := extractOpenAPIv2(log, clientSet, outputDir); err != nil {
+	if err := extractOpenAPIv2(ctx, log, clientSet, outputDir); err != nil {
 		log.Error(err, "failed to extract OpenAPI v2 spec")
 		os.Exit(1)
 	}
 
-	if err := extractOpenAPIv3(log, clientSet, testEnvExt, outputDir); err != nil {
+	if err := extractOpenAPIv3(ctx, log, clientSet, testEnvExt, outputDir); err != nil {
 		log.Error(err, "failed to extract OpenAPI v3 spec")
 		os.Exit(1)
 	}
 }
 
-func extractOpenAPIv3(log logr.Logger, clientSet *kubernetes.Clientset, ext *envtestutils.EnvironmentExtensions, outputDir string) error {
+func waitForApiServices(ctx context.Context, log logr.Logger, clientSet *kubernetes.Clientset, duration time.Duration, services []*apiregistrationv1.APIService) error {
+	ctx, cancel := context.WithTimeout(ctx, duration)
+	defer cancel()
+
+	processDone := make(chan bool)
+	go func() {
+		var available bool
+		for !available {
+			for _, apiService := range services {
+				available = true
+				gv := fmt.Sprintf("%s/%s", apiService.Spec.Group, apiService.Spec.Version)
+				err := clientSet.RESTClient().Verb(http.MethodHead).AbsPath(fmt.Sprintf("/openapi/v3/apis/%s", gv)).Do(ctx).Error()
+				if err != nil {
+					log.V(1).Info("API service is not available", "GroupVersion", gv)
+					available = false
+					break
+				}
+				log.Info("API service available", "GroupVersion", gv)
+			}
+		}
+		processDone <- true
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("encountered timeout while waiting for api serivces to become available")
+	case <-processDone:
+		log.Info("All API services are available")
+	}
+
+	return nil
+}
+
+func extractOpenAPIv3(ctx context.Context, log logr.Logger, clientSet *kubernetes.Clientset, ext *envtestutils.EnvironmentExtensions, outputDir string) error {
 	log.Info("Extracting OpenAPI v3")
 	apiServices := ext.APIServiceInstallOptions.APIServices
 
@@ -137,7 +197,7 @@ func extractOpenAPIv3(log logr.Logger, clientSet *kubernetes.Clientset, ext *env
 		fileName := fmt.Sprintf("apis__%s__%s_openapi.json", apiService.Spec.Group, apiService.Spec.Version)
 		path := fmt.Sprintf("/openapi/v3/apis/%s/%s", apiService.Spec.Group, apiService.Spec.Version)
 
-		resp, err := getPath(clientSet, path)
+		resp, err := getPath(ctx, clientSet, path)
 		if err != nil {
 			return fmt.Errorf("failed to get OpenAPI v3 path %s: %w", path, err)
 		}
@@ -149,13 +209,13 @@ func extractOpenAPIv3(log logr.Logger, clientSet *kubernetes.Clientset, ext *env
 	return nil
 }
 
-func extractOpenAPIv2(log logr.Logger, clientSet *kubernetes.Clientset, outputDir string) error {
+func extractOpenAPIv2(ctx context.Context, log logr.Logger, clientSet *kubernetes.Clientset, outputDir string) error {
 	log.Info("Extracting OpenAPI v2")
 
 	path := "/openapi/v2"
-	resp, err := clientSet.RESTClient().Get().AbsPath(path).Do(context.Background()).Raw()
+	resp, err := getPath(ctx, clientSet, path)
 	if err != nil {
-		return fmt.Errorf("failed to get OpenAPI v2 content: %w", err)
+		return fmt.Errorf("failed to get OpenAPI v3 path %s: %w", path, err)
 	}
 
 	if err := writeFile(resp, outputDir, "swagger.json"); err != nil {
@@ -179,7 +239,10 @@ func writeFile(resp []byte, outputDir string, fileName string) error {
 	file := filepath.Join(outputDir, filepath.Base(fileName))
 
 	f, err := os.Create(file)
-	defer f.Close()
+	defer func() {
+		// TODO: properly handle error
+		_ = f.Close()
+	}()
 
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", file, err)
@@ -191,8 +254,8 @@ func writeFile(resp []byte, outputDir string, fileName string) error {
 	return nil
 }
 
-func getPath(clientSet *kubernetes.Clientset, path string) ([]byte, error) {
-	resp, err := clientSet.RESTClient().Get().AbsPath(path).Do(context.Background()).Raw()
+func getPath(ctx context.Context, clientSet *kubernetes.Clientset, path string) ([]byte, error) {
+	resp, err := clientSet.RESTClient().Get().AbsPath(path).Do(ctx).Raw()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get path %s: %w", path, err)
 	}
