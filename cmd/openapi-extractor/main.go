@@ -46,20 +46,18 @@ const (
 )
 
 var (
-	testEnv    *envtest.Environment
-	testEnvExt *envtestutils.EnvironmentExtensions
-	log        = ctrl.Log.WithName("openapi-extractor")
-	ctx        = context.Background()
+	testEnv            *envtest.Environment
+	testEnvExt         *envtestutils.EnvironmentExtensions
+	log                = ctrl.Log.WithName("openapi-extractor")
+	apiServerCommand   []string
+	outputDir          = "."
+	apiServicePaths    []string
+	timeout            = 5 * time.Second
+	apiServerPackage   string
+	apiServerBuildOpts []string
 )
 
 func main() {
-	var apiServerCommand []string
-	var outputDir = "."
-	var apiServicePaths []string
-	var timeout = 5 * time.Second
-	var apiServerPackage string
-	var apiServerBuildOpts []string
-
 	flag.StringVar(&apiServerPackage, "apiserver-package", apiServerPackage, "Package to build the api server")
 	flag.StringSliceVar(&apiServerBuildOpts, "apiserver-build-opts", apiServerBuildOpts, "Flags for building the api server")
 	flag.StringSliceVar(&apiServerCommand, "apiserver-command", apiServerCommand, "Command to run the api server")
@@ -75,6 +73,15 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := extractOpenAPI(ctx); err != nil {
+		cancel()
+		log.Error(err, "failed to extract OpenAPI")
+		os.Exit(1)
+	}
+}
+
+func extractOpenAPI(ctx context.Context) error {
 	testEnv = &envtest.Environment{}
 	testEnvExt = &envtestutils.EnvironmentExtensions{
 		APIServiceDirectoryPaths:       apiServicePaths,
@@ -83,20 +90,17 @@ func main() {
 
 	cfg, err := envtestutils.StartWithExtensions(testEnv, testEnvExt)
 	if err != nil {
-		log.Error(err, "failed to start testenv")
-		os.Exit(1)
+		return fmt.Errorf("failed to start testenv: %w", err)
 	}
 	defer func() {
 		if err := envtestutils.StopWithExtensions(testEnv, testEnvExt); err != nil {
 			log.Error(err, "failed to stop testenv")
-			os.Exit(1)
 		}
 	}()
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	if err != nil {
-		log.Error(err, "failed to create Kubernetes client")
-		os.Exit(1)
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
 	var buildOpts []buildutils.BuildOption
@@ -114,46 +118,40 @@ func main() {
 		CertDir:      testEnvExt.APIServiceInstallOptions.LocalServingCertDir,
 	})
 	if err != nil {
-		log.Error(err, "failed to setup api server")
-		os.Exit(1)
+		return fmt.Errorf("failed to setup api server: %w", err)
 	}
 
 	if err := apiSrv.Start(); err != nil {
-		log.Error(err, "failed to start api server")
-		os.Exit(1)
+		return fmt.Errorf("failed to start api server: %w", err)
 	}
 	defer func() {
 		if err := apiSrv.Stop(); err != nil {
 			log.Error(err, "failed to stop api server")
-			os.Exit(1)
 		}
 	}()
 
 	if err := envtestutils.WaitUntilAPIServicesReadyWithTimeout(apiServiceTimeout, testEnvExt, k8sClient, scheme.Scheme); err != nil {
-		log.Error(err, "failed to wait for api server to become ready")
-		os.Exit(1)
+		return fmt.Errorf("failed to wait for api server to become ready: %w", err)
 	}
 
 	clientSet, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		log.Error(err, "failed to create clientset from config")
-		os.Exit(1)
+		return fmt.Errorf("failed to create clientset from config: %w", err)
 	}
 
 	if err := waitForApiServices(ctx, log, clientSet, timeout, testEnvExt.APIServiceInstallOptions.APIServices); err != nil {
-		log.Error(err, "failed to wait for the api services to become available")
-		os.Exit(1)
+		return fmt.Errorf("failed to wait for the api services to become available: %w", err)
 	}
 
 	if err := extractOpenAPIv2(ctx, log, clientSet, outputDir); err != nil {
-		log.Error(err, "failed to extract OpenAPI v2 spec")
-		os.Exit(1)
+		return fmt.Errorf("failed to extract OpenAPI v2 spec: %w", err)
 	}
 
 	if err := extractOpenAPIv3(ctx, log, clientSet, testEnvExt, outputDir); err != nil {
-		log.Error(err, "failed to extract OpenAPI v3 spec")
-		os.Exit(1)
+		return fmt.Errorf("failed to extract OpenAPI v3 spec: %w", err)
 	}
+
+	return nil
 }
 
 func waitForApiServices(ctx context.Context, log logr.Logger, clientSet *kubernetes.Clientset, duration time.Duration, services []*apiregistrationv1.APIService) error {
