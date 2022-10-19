@@ -73,7 +73,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctrl.SetupSignalHandler())
 	if err := extractOpenAPI(ctx); err != nil {
 		cancel()
 		log.Error(err, "failed to extract OpenAPI")
