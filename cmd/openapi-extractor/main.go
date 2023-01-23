@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -30,6 +31,9 @@ import (
 	"github.com/onmetal/openapi-extractor/envtestutils"
 	"github.com/onmetal/openapi-extractor/envtestutils/apiserver"
 	flag "github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
@@ -46,15 +50,17 @@ const (
 )
 
 var (
-	testEnv            *envtest.Environment
-	testEnvExt         *envtestutils.EnvironmentExtensions
-	log                = ctrl.Log.WithName("openapi-extractor")
-	apiServerCommand   []string
-	outputDir          = "."
-	apiServicePaths    []string
-	timeout            = 5 * time.Second
-	apiServerPackage   string
-	apiServerBuildOpts []string
+	testEnv                  *envtest.Environment
+	testEnvExt               *envtestutils.EnvironmentExtensions
+	log                      = ctrl.Log.WithName("openapi-extractor")
+	apiServerCommand         []string
+	outputDir                = "."
+	apiServicePaths          []string
+	openapiTimeout           = 30 * time.Second
+	apiServerPackage         string
+	apiServerBuildOpts       []string
+	attachControlPlaneOutput bool
+	attachAPIServerOutput    bool
 )
 
 func main() {
@@ -62,8 +68,10 @@ func main() {
 	flag.StringSliceVar(&apiServerBuildOpts, "apiserver-build-opts", apiServerBuildOpts, "Flags for building the api server")
 	flag.StringSliceVar(&apiServerCommand, "apiserver-command", apiServerCommand, "Command to run the api server")
 	flag.StringSliceVar(&apiServicePaths, "apiservices", apiServicePaths, "Comma separated list of api service definitions")
+	flag.BoolVar(&attachControlPlaneOutput, "attach-control-plane-output", attachControlPlaneOutput, "Whether to print control plane output to stdout/stderr")
+	flag.BoolVar(&attachAPIServerOutput, "attach-apiserver-output", attachAPIServerOutput, "Whether to print api server output to stdout/stderr")
 	flag.StringVar(&outputDir, "output", outputDir, "Directory to store the extracted OpenAPI specs (default: current directory)")
-	flag.DurationVar(&timeout, "timeout", timeout, "Timeout to wait for api services to become available")
+	flag.DurationVar(&openapiTimeout, "openapi-timeout", openapiTimeout, "Timeout to wait for the /openapi/v3 endpoint for all api services to become available")
 
 	opts := zap.Options{
 		Development: true,
@@ -82,7 +90,9 @@ func main() {
 }
 
 func extractOpenAPI(ctx context.Context) error {
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		AttachControlPlaneOutput: attachControlPlaneOutput,
+	}
 	testEnvExt = &envtestutils.EnvironmentExtensions{
 		APIServiceDirectoryPaths:       apiServicePaths,
 		ErrorIfAPIServicePathIsMissing: true,
@@ -109,6 +119,7 @@ func extractOpenAPI(ctx context.Context) error {
 	}
 
 	apiSrv, err := apiserver.New(cfg, apiserver.Options{
+		AttachOutput: attachAPIServerOutput,
 		Command:      apiServerCommand,
 		MainPath:     apiServerPackage,
 		BuildOptions: buildOpts,
@@ -139,7 +150,7 @@ func extractOpenAPI(ctx context.Context) error {
 		return fmt.Errorf("failed to create clientset from config: %w", err)
 	}
 
-	if err := waitForApiServices(ctx, log, clientSet, timeout, testEnvExt.APIServiceInstallOptions.APIServices); err != nil {
+	if err := waitForAPIServicesOpenAPIV3(ctx, log, clientSet, openapiTimeout, testEnvExt.APIServiceInstallOptions.APIServices); err != nil {
 		return fmt.Errorf("failed to wait for the api services to become available: %w", err)
 	}
 
@@ -154,36 +165,52 @@ func extractOpenAPI(ctx context.Context) error {
 	return nil
 }
 
-func waitForApiServices(ctx context.Context, log logr.Logger, clientSet *kubernetes.Clientset, duration time.Duration, services []*apiregistrationv1.APIService) error {
-	ctx, cancel := context.WithTimeout(ctx, duration)
-	defer cancel()
+func sortedGroupVersions(gvs []schema.GroupVersion) []schema.GroupVersion {
+	sort.Slice(gvs, func(i, j int) bool {
+		return gvs[i].String() < gvs[j].String()
+	})
+	return gvs
+}
 
-	processDone := make(chan bool)
-	go func() {
-		var available bool
-		for !available {
-			for _, apiService := range services {
-				available = true
-				gv := fmt.Sprintf("%s/%s", apiService.Spec.Group, apiService.Spec.Version)
-				err := clientSet.RESTClient().Verb(http.MethodHead).AbsPath(fmt.Sprintf("/openapi/v3/apis/%s", gv)).Do(ctx).Error()
-				if err != nil {
-					log.V(1).Info("API service is not available", "GroupVersion", gv)
-					available = false
-					break
-				}
-				log.Info("API service available", "GroupVersion", gv)
-			}
-		}
-		processDone <- true
-	}()
-
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("encountered timeout while waiting for api serivces to become available")
-	case <-processDone:
-		log.Info("All API services are available")
+func waitForAPIServicesOpenAPIV3(
+	ctx context.Context,
+	log logr.Logger,
+	clientSet *kubernetes.Clientset,
+	timeout time.Duration,
+	services []*apiregistrationv1.APIService,
+) error {
+	testGVs := sets.New[schema.GroupVersion]()
+	for _, svc := range services {
+		testGVs.Insert(schema.GroupVersion{
+			Group:   svc.Spec.Group,
+			Version: svc.Spec.Version,
+		})
 	}
 
+	if err := wait.PollImmediateWithContext(ctx, 1*time.Second, timeout, func(ctx context.Context) (done bool, err error) {
+		newTestGVs := sets.New[schema.GroupVersion]()
+		for testGV := range testGVs {
+			err := clientSet.RESTClient().
+				Verb(http.MethodHead).
+				AbsPath(fmt.Sprintf("/openapi/v3/apis/%s/%s", testGV.Group, testGV.Version)).
+				Do(ctx).
+				Error()
+			if err != nil {
+				newTestGVs.Insert(testGV)
+			}
+		}
+
+		if newTestGVs.Len() == 0 {
+			log.Info("All API services are available")
+			return true, nil
+		}
+
+		testGVs = newTestGVs
+		log.Info("Not all API services are available", "UnavailableGroupVersions", sortedGroupVersions(testGVs.UnsortedList()))
+		return false, nil
+	}); err != nil {
+		return fmt.Errorf("error waiting for api services to become available: %w", err)
+	}
 	return nil
 }
 
@@ -200,7 +227,7 @@ func extractOpenAPIv3(ctx context.Context, log logr.Logger, clientSet *kubernete
 			return fmt.Errorf("failed to get OpenAPI v3 path %s: %w", path, err)
 		}
 
-		if err := writeFile(resp, fmt.Sprintf("%s/%s", outputDir, "v3"), fileName); err != nil {
+		if err := writeJSONFile(fmt.Sprintf("%s/%s", outputDir, "v3"), fileName, resp); err != nil {
 			return fmt.Errorf("failed to write OpenAPI v3 file: %w", err)
 		}
 	}
@@ -216,38 +243,28 @@ func extractOpenAPIv2(ctx context.Context, log logr.Logger, clientSet *kubernete
 		return fmt.Errorf("failed to get OpenAPI v3 path %s: %w", path, err)
 	}
 
-	if err := writeFile(resp, outputDir, "swagger.json"); err != nil {
+	if err := writeJSONFile(outputDir, "swagger.json", resp); err != nil {
 		return fmt.Errorf("failed to write OpenAPI v2 file: %w", err)
 	}
 
 	return nil
 }
 
-func writeFile(resp []byte, outputDir string, fileName string) error {
-	log.Info("Writing file", "OutputDirectory", outputDir, "File", fileName)
+func writeJSONFile(dir string, name string, jsonData []byte) error {
+	log.Info("Writing file", "OutputDirectory", dir, "File", name)
 
-	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create output directory %s: %w", dir, err)
 	}
 
 	var out bytes.Buffer
-	if err := json.Indent(&out, resp, "", "\t"); err != nil {
+	if err := json.Indent(&out, jsonData, "", "\t"); err != nil {
 		return fmt.Errorf("failed to pretty print JSON: %w", err)
 	}
-	file := filepath.Join(outputDir, filepath.Base(fileName))
 
-	f, err := os.Create(file)
-	defer func() {
-		// TODO: properly handle error
-		_ = f.Close()
-	}()
-
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", file, err)
-	}
-	_, err = f.Write(out.Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to write file %s: %w", file, err)
+	filename := filepath.Join(dir, filepath.Base(name))
+	if err := os.WriteFile(filename, out.Bytes(), 0600); err != nil {
+		return fmt.Errorf("error writing file %s: %w", filename, err)
 	}
 	return nil
 }
