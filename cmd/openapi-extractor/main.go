@@ -187,7 +187,7 @@ func waitForAPIServicesOpenAPIV3(
 		})
 	}
 
-	if err := wait.PollImmediateWithContext(ctx, 1*time.Second, timeout, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, 1*time.Second, timeout, true, func(ctx context.Context) (done bool, err error) {
 		newTestGVs := sets.New[schema.GroupVersion]()
 		for testGV := range testGVs {
 			err := clientSet.RESTClient().
