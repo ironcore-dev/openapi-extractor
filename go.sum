@@ -1,5 +1,4 @@
 github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cqUQ3I=
-github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 h1:yL7+Jz0jTC6yykIK/Wh74gnTJnrGr5AyrNMXuA0gves=
 github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df h1:7RFfzj4SSt6nnvCPbCqijJi1nWCd+TqAT3bYCStRC18=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a h1:idn718Q4B6AGu/h5Sxe66HYVdqdGu2l9Iebqhi/AEoA=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
@@ -259,8 +258,8 @@ k8s.io/component-base v0.28.0/go.mod h1:Yyf3+ZypLfMydVzuLBqJ5V7Kx6WwDr/5cN+dFjw1
 k8s.io/klog/v2 v2.100.1 h1:7WCHKK6K8fNhTqfBhISHQ97KrnJNFZMcQvKp7gP/tmg=
 k8s.io/klog/v2 v2.100.1/go.mod h1:y1WjHnz7Dj687irZUWR/WLkLc5N1YHtjLdmgWjndZn0=
 k8s.io/kms v0.28.0 h1:BwJhU9qPcJhHLUcQjtelOSjYti+1/caJLr+4jHbKzTA=
-k8s.io/kube-aggregator v0.27.4 h1:WdK9iiBr32G8bWfpUEFVQl70RZO2dU19ZAktUXL5JFc=
-k8s.io/kube-aggregator v0.27.4/go.mod h1:+eG83gkAyh0uilQEAOgheeQW4hr+PkyV+5O1nLGsjlM=
+k8s.io/kube-aggregator v0.28.0 h1:8uH1SoRLlDdhdaW64eAK1BDWUXr2jLtVhiShysTzcok=
+k8s.io/kube-aggregator v0.28.0/go.mod h1:wD7UarSU4HRyeDUIZLEHpvXNqL613w59yaM7ctjYapA=
 k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 h1:LyMgNKD2P8Wn1iAwQU5OhxCKlKJy0sHc+PcDwFB24dQ=
 k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9/go.mod h1:wZK2AVp1uHCp4VamDVgBP2COHZjqD1T68Rf0CM3YjSM=
 k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 h1:qY1Ad8PODbnymg2pRbkyMT/ylpTrCM8P2RJ0yroCyIk=
