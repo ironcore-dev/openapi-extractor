@@ -1,5 +1,8 @@
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24.2
+ENVTEST_K8S_VERSION = 1.26.0
+
+# 'sample' folder, where you mentioned the `go mod download` should take place
+SAMPLE_DIR = sample
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -35,6 +38,15 @@ vet: ## Run go vet against code.
 .PHONY: test
 test: fmt vet envtest checklicense ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+
+.PHONY: openapi-test
+openapi-test: download fmt vet envtest checklicense ## Run tests.
+	$(eval ONMETAL_API_PATH = $(shell cd $(SAMPLE_DIR) && go list -f '{{.Dir}}' -m github.com/onmetal/onmetal-api))
+	go build -o $(SAMPLE_DIR)/bin/openapi-extractor ./cmd/openapi-extractor
+	cd $(SAMPLE_DIR) && KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" ./bin/openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/onmetal-apiserver --apiserver-build-opts=mod --apiservices="$(ONMETAL_API_PATH)/config/apiserver/apiservice/bases"
+
+download:
+	cd $(SAMPLE_DIR) && go mod download
 
 .PHONY: addlicense
 addlicense: ## Add license headers to all go files.
