@@ -33,7 +33,7 @@ The [`sample`](/sample) folder contains an example on how to extract the Open AP
 our example we are using the [`onmetal-api`](https://github.com/onmetal/onmetal-api) aggregated api server.
 
 ```shell
-openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/apiserver \
+openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/onmetal-apiserver \
   --apiserver-build-opts=mod \
   --apiservices=<PATH-TO-APISERVICES-DIR>
 ```
