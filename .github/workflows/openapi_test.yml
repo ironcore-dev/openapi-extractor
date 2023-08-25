@@ -23,13 +23,3 @@ jobs:
       - name: Run openapi-extractor
         run: |
           make openapi-test
-
-      - name: Check if swagger.json and v3 directory exist and list v3 files
-        run: |
-          [ -f ./sample/swagger.json ] || exit 1
-          [ -d ./sample/v3 ] || exit 1
-          echo "Listing generated files in v3:"
-          ls -l ./sample/v3/
-          for json_file in ./sample/v3/*.json; do
-            [ -s "$json_file" ] || exit 1
-          done

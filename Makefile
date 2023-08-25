@@ -40,13 +40,8 @@ test: fmt vet envtest checklicense ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 .PHONY: openapi-test
-openapi-test: download fmt vet envtest checklicense ## Run tests.
-	$(eval ONMETAL_API_PATH = $(shell cd $(SAMPLE_DIR) && go list -f '{{.Dir}}' -m github.com/onmetal/onmetal-api))
-	go build -o $(SAMPLE_DIR)/bin/openapi-extractor ./cmd/openapi-extractor
-	cd $(SAMPLE_DIR) && KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" ./bin/openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/onmetal-apiserver --apiserver-build-opts=mod --apiservices="$(ONMETAL_API_PATH)/config/apiserver/apiservice/bases"
-
-download:
-	cd $(SAMPLE_DIR) && go mod download
+openapi-test: fmt vet envtest checklicense ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" ./hack/openapi-test.sh
 
 .PHONY: addlicense
 addlicense: ## Add license headers to all go files.
