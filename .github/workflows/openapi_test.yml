@@ -1,0 +1,25 @@
+name: OpenAPI Test
+
+on:
+  pull_request:
+    types: [ assigned, opened, synchronize, reopened ]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+
+jobs:
+  test_openapi_extraction:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v2
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run openapi-extractor
+        run: |
+          make openapi-test

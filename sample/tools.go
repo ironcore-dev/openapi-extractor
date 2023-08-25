@@ -15,3 +15,5 @@
 //go:build ignore
 
 package sample
+
+import _ "github.com/onmetal/onmetal-api"
