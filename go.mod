@@ -7,7 +7,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/onmetal/controller-utils v0.8.2
 	github.com/onsi/ginkgo/v2 v2.12.1
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sys v0.12.0
 	k8s.io/api v0.28.2
