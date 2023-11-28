@@ -7,11 +7,11 @@ updates:
       interval: "daily"
     open-pull-requests-limit: 10
     reviewers:
-      - "onmetal/onmetal-api-maintainers"
+      - "ironcore-dev/core"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
     reviewers:
-      - "onmetal/onmetal-api-maintainers"
+      - "ironcore-dev/core"

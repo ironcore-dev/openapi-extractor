@@ -1,8 +1,8 @@
 # openapi-extractor
 
-[![Test](https://github.com/onmetal/openapi-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/onmetal/openapi-extractor/actions/workflows/test.yml)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
-[![GitHub License](https://img.shields.io/static/v1?label=License&message=Apache-2.0&color=blue&style=flat-square)](LICENSE)
+[![Test](https://github.com/ironcore-dev/openapi-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/ironcore-dev/openapi-extractor/actions/workflows/test.yml)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
+[![GitHub License](https://img.shields.io/static/v1?label=License&message=Apache-2.0&color=blue)](LICENSE)
 
 The `openapi-extractor` extracts the OpenAPI v2 and v3 specifications of a given Kubernetes API server.
 
@@ -13,7 +13,7 @@ The `openapi-extractor` extracts the OpenAPI v2 and v3 specifications of a given
 To install the `openapi-extractor` binary into your Go bin path run
 
 ```bash
-go install github.com/onmetal/openapi-extractor/cmd/openapi-extractor@main
+go install github.com/ironcore-dev/openapi-extractor/cmd/openapi-extractor@main
 ```
 
 ## Usage
@@ -30,10 +30,10 @@ openapi-extractor --apiserver-command=<PATH-TO-APISERVER-BIN> \
 ### Go module based extraction
 
 The [`sample`](/sample) folder contains an example on how to extract the Open API spec from an api server package. In 
-our example we are using the [`onmetal-api`](https://github.com/onmetal/onmetal-api) aggregated api server.
+our example we are using the [`ironcore`](https://github.com/ironcore-dev/ironcore) aggregated api server.
 
 ```shell
-openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/onmetal-apiserver \
+openapi-extractor --apiserver-package=github.com/ironcore-dev/ironcore/cmd/ironcore-apiserver \
   --apiserver-build-opts=mod \
   --apiservices=<PATH-TO-APISERVICES-DIR>
 ```
