@@ -1,5 +1,5 @@
-module github.com/onmetal/openapi-extractor/sample
+module github.com/ironcore-dev/openapi-extractor/sample
 
-go 1.20
+go 1.21
 
-require github.com/onmetal/onmetal-api v0.1.2-0.20230824223421-535cd963b665 // indirect
+require github.com/ironcore-dev/ironcore v0.1.2-0.20231127224338-a3c25069690d // indirect

@@ -1,4 +1,4 @@
-// Copyright 2022 OnMetal authors
+// Copyright 2022 IronCore authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,22 +27,21 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/onmetal/controller-utils/buildutils"
-	"github.com/onmetal/openapi-extractor/envtestutils"
-	"github.com/onmetal/openapi-extractor/envtestutils/apiserver"
+	"github.com/ironcore-dev/controller-utils/buildutils"
+	"github.com/ironcore-dev/openapi-extractor/envtestutils"
+	"github.com/ironcore-dev/openapi-extractor/envtestutils/apiserver"
 	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 const (

@@ -12,12 +12,12 @@ go build -o "$SAMPLE_DIR/bin/openapi-extractor" "$SCRIPT_DIR/../cmd/openapi-extr
 
 echo "Find api services:"
 cd "$SAMPLE_DIR" && go mod download
-ONMETAL_API_PATH=$(go list -f '{{.Dir}}' -m github.com/onmetal/onmetal-api)
+IRONCORE_PATH=$(go list -f '{{.Dir}}' -m github.com/ironcore-dev/ironcore)
 
 echo "Extract openapi specs from api-server:"
-./bin/openapi-extractor --apiserver-package=github.com/onmetal/onmetal-api/cmd/onmetal-apiserver \
+./bin/openapi-extractor --apiserver-package=github.com/ironcore-dev/ironcore/cmd/ironcore-apiserver \
   --apiserver-build-opts=mod \
-  --apiservices="$ONMETAL_API_PATH/config/apiserver/apiservice/bases"
+  --apiservices="$IRONCORE_PATH/config/apiserver/apiservice/bases"
 
 echo "Ensure api specs where extracted:"
 [ -f ./swagger.json ] || exit 1

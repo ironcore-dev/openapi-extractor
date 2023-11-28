@@ -1,5 +1,5 @@
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.26.0
+ENVTEST_K8S_VERSION = 1.28.0
 
 # 'sample' folder, where you mentioned the `go mod download` should take place
 SAMPLE_DIR = sample
@@ -28,33 +28,35 @@ help: ## Display this help.
 ##@ Development
 
 .PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+fmt: goimports ## Run goimports against code.
+	$(GOIMPORTS) -w .
 
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: lint
+lint: golangci-lint ## Run golangci-lint on the code.
+	$(GOLANGCI_LINT) run ./...
+
 .PHONY: test
-test: fmt vet envtest checklicense ## Run tests.
+test: fmt vet envtest check-license ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 .PHONY: openapi-test
-openapi-test: fmt vet envtest checklicense ## Run tests.
+openapi-test: fmt vet envtest check-license ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" ./hack/openapi-test.sh
 
-.PHONY: addlicense
-addlicense: ## Add license headers to all go files.
-	find . -name '*.go' -exec go run github.com/google/addlicense -c 'OnMetal authors' {} +
+.PHONY: add-license
+add-license: addlicense ## Add license headers to all go files.
+	find . -name '*.go' -exec $(ADDLICENSE) -f hack/license-header.txt {} +
 
-.PHONY: checklicense
-checklicense: ## Check that every file has a license header present.
-	find . -name '*.go' -exec go run github.com/google/addlicense  -check -c 'OnMetal authors' {} +
+.PHONY: check-license
+check-license: addlicense ## Check that every file has a license header present.
+	find . -name '*.go' -exec $(ADDLICENSE) -check -c 'IronCore authors' {} +
 
-lint: ## Run golangci-lint against code.
-	golangci-lint run ./...
-
-check: checklicense lint test
+.PHONY: check
+check: check-license fmt lint test ## Check the codebase. Useful before committing / pushing.
 
 ##@ Build
 
@@ -75,8 +77,31 @@ $(LOCALBIN):
 
 ## Tool Binaries
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+ADDLICENSE ?= $(LOCALBIN)/addlicense
+GOIMPORTS ?= $(LOCALBIN)/goimports
+GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
+
+## Tool Versions
+ADDLICENSE_VERSION ?= v1.1.1
+GOIMPORTS_VERSION ?= v0.14.0
+GOLANGCI_LINT_VERSION ?= v1.55.2
+
+.PHONY: addlicense
+addlicense: $(ADDLICENSE) ## Download addlicense locally if necessary.
+$(ADDLICENSE): $(LOCALBIN)
+	test -s $(LOCALBIN)/addlicense || GOBIN=$(LOCALBIN) go install github.com/google/addlicense@$(ADDLICENSE_VERSION)
+
+.PHONY: goimports
+goimports: $(GOIMPORTS) ## Download goimports locally if necessary.
+$(GOIMPORTS): $(LOCALBIN)
+	test -s $(LOCALBIN)/goimports || GOBIN=$(LOCALBIN) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: goimports
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT): $(LOCALBIN)
+	test -s $(LOCALBIN)/golangci-lint || GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)

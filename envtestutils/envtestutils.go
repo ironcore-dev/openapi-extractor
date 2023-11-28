@@ -1,4 +1,4 @@
-// Copyright 2021 OnMetal authors
+// Copyright 2021 IronCore authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onmetal/controller-utils/conditionutils"
-	"github.com/onmetal/openapi-extractor/internal/testing/addr"
-	"github.com/onmetal/openapi-extractor/internal/testing/certs"
+	"github.com/ironcore-dev/controller-utils/conditionutils"
+	"github.com/ironcore-dev/openapi-extractor/internal/testing/addr"
+	"github.com/ironcore-dev/openapi-extractor/internal/testing/certs"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -298,7 +298,7 @@ func (o *APIServiceInstallOptions) Stop() error {
 	return nil
 }
 
-const fieldOwner = client.FieldOwner("envtest.onmetal-api.onmetal.de")
+const fieldOwner = client.FieldOwner("envtest.ironcore.dev")
 
 func (o *APIServiceInstallOptions) ApplyAPIServices(cfg *rest.Config) error {
 	ctx := context.TODO()
