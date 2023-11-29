@@ -1,5 +1,6 @@
 # openapi-extractor
 
+[![REUSE status](https://api.reuse.software/badge/github.com/ironcore-dev/openapi-extractor)](https://api.reuse.software/info/github.com/ironcore-dev/openapi-extractor)
 [![Test](https://github.com/ironcore-dev/openapi-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/ironcore-dev/openapi-extractor/actions/workflows/test.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
 [![GitHub License](https://img.shields.io/static/v1?label=License&message=Apache-2.0&color=blue)](LICENSE)
