@@ -8,6 +8,7 @@ linters:
     - misspell
     - goimports
     - importas
+    - ginkgolinter
 
 severity:
   default-severity: error
