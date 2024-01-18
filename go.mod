@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/go-logr/logr v1.4.1
 	github.com/ironcore-dev/controller-utils v0.9.1
-	github.com/onsi/ginkgo/v2 v2.14.0
+	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.30.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sys v0.16.0
