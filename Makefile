@@ -1,5 +1,5 @@
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.28.0
+ENVTEST_K8S_VERSION = 1.29.0
 
 # 'sample' folder, where you mentioned the `go mod download` should take place
 SAMPLE_DIR = sample
@@ -83,8 +83,8 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 ADDLICENSE_VERSION ?= v1.1.1
-GOIMPORTS_VERSION ?= v0.14.0
-GOLANGCI_LINT_VERSION ?= v1.55.2
+GOIMPORTS_VERSION ?= v0.21.0
+GOLANGCI_LINT_VERSION ?= v1.58.0
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE) ## Download addlicense locally if necessary.
