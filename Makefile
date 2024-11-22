@@ -1,5 +1,5 @@
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.29.0
+ENVTEST_K8S_VERSION = 1.30.0
 
 # 'sample' folder, where you mentioned the `go mod download` should take place
 SAMPLE_DIR = sample
@@ -41,11 +41,11 @@ lint: golangci-lint ## Run golangci-lint on the code.
 
 .PHONY: test
 test: fmt vet envtest check-license ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 .PHONY: openapi-test
 openapi-test: fmt vet envtest check-license ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" ./hack/openapi-test.sh
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ./hack/openapi-test.sh
 
 .PHONY: add-license
 add-license: addlicense ## Add license headers to all go files.
@@ -83,8 +83,8 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 ADDLICENSE_VERSION ?= v1.1.1
-GOIMPORTS_VERSION ?= v0.21.0
-GOLANGCI_LINT_VERSION ?= v1.58.0
+GOIMPORTS_VERSION ?= v0.26.0
+GOLANGCI_LINT_VERSION ?= v1.61.0
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE) ## Download addlicense locally if necessary.
