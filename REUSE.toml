@@ -1,0 +1,34 @@
+version = 1
+SPDX-PackageName = "openapi-extractor"
+SPDX-PackageSupplier = "IronCore authors <ospo@sap.com>"
+SPDX-PackageDownloadLocation = "https://github.com/ironcore-dev/openapi-extractor"
+
+[[annotations]]
+path = [".github/**", ".gitignore", ".golangci.yaml", "CODEOWNERS", "CODE_OF_CONDUCT.md", "Dockerfile", "Makefile", "**go.mod", "**go.sum", "hack/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2023 SAP SE or an SAP affiliate company and IronCore contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "README.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2023 SAP SE or an SAP affiliate company and IronCore contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "internal/testing/flock/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2016-2021 The Kubernetes Authors."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "internal/testing/certs/certs.go"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 The Kubernetes Authors."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "internal/testing/addr/addr.go"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 The Kubernetes Authors."
+SPDX-License-Identifier = "Apache-2.0"
