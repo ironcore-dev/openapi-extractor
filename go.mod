@@ -1,6 +1,6 @@
 module github.com/ironcore-dev/openapi-extractor
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -9,12 +9,12 @@ require (
 	github.com/onsi/gomega v1.36.3
 	github.com/spf13/pflag v1.0.6
 	golang.org/x/sys v0.31.0
-	k8s.io/api v0.32.2
-	k8s.io/apimachinery v0.32.2
-	k8s.io/client-go v0.32.2
-	k8s.io/kube-aggregator v0.32.2
+	k8s.io/api v0.32.3
+	k8s.io/apimachinery v0.32.3
+	k8s.io/client-go v0.32.3
+	k8s.io/kube-aggregator v0.32.3
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/controller-runtime v0.20.2
+	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/yaml v1.4.0
 )
 
