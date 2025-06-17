@@ -1,4 +1,5 @@
 module github.com/ironcore-dev/openapi-extractor/sample
 
-go 1.23.0
-toolchain go1.24.1
+go 1.24.0
+
+require github.com/ironcore-dev/ironcore v0.2.3 // indirect
