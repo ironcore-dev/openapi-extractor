@@ -94,6 +94,8 @@ github.com/ironcore-dev/ironcore v0.2.0 h1:HETSSh46t+aKbJZql5dcbXBRUjHSwHYy7ZixN
 github.com/ironcore-dev/ironcore v0.2.0/go.mod h1:wlvF43Afs1OpO0w6ZIXw+YaLnfBOfrEi9f4/MBdR1mc=
 github.com/ironcore-dev/ironcore v0.2.2 h1:c23smdbxcoSKOir/jQvCIyWuj3HfF7T6t6tN2h7pqQ8=
 github.com/ironcore-dev/ironcore v0.2.2/go.mod h1:r4p2CGWnzk8/0UTXUgDTT9AvA6hkvRmPHZ/oHKn7Fl8=
+github.com/ironcore-dev/ironcore v0.2.4 h1:i/RqiMIdzaptuDR6EKSX9hbeolj7AfTuT+4v1ZC4Jeg=
+github.com/ironcore-dev/ironcore v0.2.4/go.mod h1:idYH/uyjxsIx8k3PFfXNtwfEpF9bBzBNe0aJFpIZpxs=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

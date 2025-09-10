@@ -1,5 +1,5 @@
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.32.0
+ENVTEST_K8S_VERSION = 1.33.0
 
 # 'sample' folder, where you mentioned the `go mod download` should take place
 SAMPLE_DIR = sample
@@ -65,7 +65,7 @@ build: fmt vet ## Build manager binary.
 	go build -o bin/openapi-extractor cmd/openapi-extractor/main.go
 
 .PHONY: run
-run: manifests fmt vet ## Run a controller from your host.
+run: fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 ##@ Build Dependencies
