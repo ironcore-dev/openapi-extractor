@@ -7,7 +7,7 @@ require (
 	github.com/ironcore-dev/controller-utils v0.9.9
 	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.1
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/pflag v1.0.10
 	golang.org/x/sys v0.35.0
 	k8s.io/api v0.33.3
 	k8s.io/apimachinery v0.33.3
