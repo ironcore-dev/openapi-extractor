@@ -9,10 +9,10 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/sys v0.36.0
-	k8s.io/api v0.33.3
-	k8s.io/apimachinery v0.33.3
-	k8s.io/client-go v0.33.3
-	k8s.io/kube-aggregator v0.33.3
+	k8s.io/api v0.33.4
+	k8s.io/apimachinery v0.33.4
+	k8s.io/client-go v0.33.4
+	k8s.io/kube-aggregator v0.33.4
 	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.6.0
