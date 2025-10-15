@@ -8,7 +8,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 	k8s.io/api v0.33.4
 	k8s.io/apimachinery v0.33.4
 	k8s.io/client-go v0.33.4
